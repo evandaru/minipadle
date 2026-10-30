@@ -6,6 +6,7 @@ MiniPadle.dmg
 *.app
 *.o
 *.a
+test_bin
 
 # Repomix
 repomix-output.xml
@@ -16,7 +17,7 @@ repomix-output.xml
 .AppleDouble
 
 # Xcode (kalau suatu saat dibuka pakai Xcode)
-xcuserdata/
+userdata/
 DerivedData/
 *.xcodeproj/*
 *.xcworkspace/*
