@@ -109,6 +109,7 @@ static NSMutableDictionary<NSString *, NSImage *> *sExtensionIconCache = nil;
 
         self->_showHiddenFiles = [[NSUserDefaults standardUserDefaults] boolForKey:@"MiniPadleShowHiddenFiles"];
         self->_lastSidebarWidth = 230.0;
+        self->_isSidebarHidden = NO;
 
         [self updateFont];
 
@@ -190,15 +191,8 @@ static NSMutableDictionary<NSString *, NSImage *> *sExtensionIconCache = nil;
         self->_tabBarContainer.autoresizingMask = NSViewWidthSizable | NSViewMinYMargin;
         self->_tabBarContainer.wantsLayer = YES;
 
-        // Tombol Main Menu di ujung kanan Tab Bar
-        self->_mainMenuBtn = [NSButton buttonWithTitle:@"Main Menu" target:self action:@selector(goToMainMenu)];
-        self->_mainMenuBtn.frame = NSMakeRect(730 - 95, (tabHeight - 24) / 2.0, 88, 24);
-        self->_mainMenuBtn.bezelStyle = NSBezelStyleInline;
-        self->_mainMenuBtn.font = [NSFont systemFontOfSize:11 weight:NSFontWeightMedium];
-        self->_mainMenuBtn.autoresizingMask = NSViewMinXMargin | NSViewMinYMargin | NSViewMaxYMargin;
-        [self->_tabBarContainer addSubview:self->_mainMenuBtn];
-
-        self->_tabScrollView = [[NSScrollView alloc] initWithFrame:NSMakeRect(0, 0, 730 - 100, tabHeight)];
+        // Tab Scroll View memenuhi penuh lebar tab container
+        self->_tabScrollView = [[NSScrollView alloc] initWithFrame:self->_tabBarContainer.bounds];
         self->_tabScrollView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
         self->_tabScrollView.hasHorizontalScroller = NO;
         self->_tabScrollView.hasVerticalScroller = NO;
@@ -241,6 +235,8 @@ static NSMutableDictionary<NSString *, NSImage *> *sExtensionIconCache = nil;
         [self->_rightContainer addSubview:self->_statusLabel];
 
         [self->_splitView addSubview:self->_rightContainer];
+        [self->_splitView setHoldingPriority:NSLayoutPriorityDefaultHigh forSubviewAtIndex:0];
+        [self->_splitView setHoldingPriority:NSLayoutPriorityDefaultLow forSubviewAtIndex:1];
         [self->_splitView setPosition:230 ofDividerAtIndex:0];
         [self->_splitView adjustSubviews];
         win.contentView = self->_splitView;
@@ -291,27 +287,82 @@ static NSMutableDictionary<NSString *, NSImage *> *sExtensionIconCache = nil;
 
 #pragma mark - Toggle Sidebar (Hidden Sidebar)
 
+- (void)toggleSidebar:(id)sender {
+    [self toggleSidebar];
+}
+
 - (void)toggleSidebar {
-    BOOL isHidden = self->_leftContainer.isHidden || [self->_splitView isSubviewCollapsed:self->_leftContainer];
-    if (isHidden) {
+    CGFloat totalWidth = self->_splitView.bounds.size.width;
+
+    BOOL isCurrentlyHidden = self->_isSidebarHidden ||
+                             self->_leftContainer.isHidden ||
+                             [self->_splitView isSubviewCollapsed:self->_leftContainer] ||
+                             self->_leftContainer.frame.size.width <= 10.0;
+
+    if (isCurrentlyHidden) {
+        // --- 1. TAMPILKAN KEMBALI SIDEBAR ---
+        CGFloat targetW = (self->_lastSidebarWidth >= 140.0) ? self->_lastSidebarWidth : 230.0;
+        if (targetW > totalWidth - 180.0) {
+            targetW = 230.0;
+        }
+
+        self->_isSidebarHidden = NO;
         self->_leftContainer.hidden = NO;
-        CGFloat targetW = self->_lastSidebarWidth > 120.0 ? self->_lastSidebarWidth : 230.0;
         [self->_splitView setPosition:targetW ofDividerAtIndex:0];
+        [self->_splitView adjustSubviews];
+
+        [self->_leftContainer setNeedsDisplay:YES];
+        [self->_outlineView setNeedsDisplay:YES];
     } else {
-        self->_lastSidebarWidth = self->_leftContainer.frame.size.width;
+        // --- 2. SEMBUNYIKAN SIDEBAR ---
+        CGFloat currentW = self->_leftContainer.frame.size.width;
+        if (currentW >= 140.0) {
+            self->_lastSidebarWidth = currentW;
+        }
+
+        self->_isSidebarHidden = YES;
         self->_leftContainer.hidden = YES;
-        [self->_splitView setPosition:0 ofDividerAtIndex:0];
+        [self->_splitView adjustSubviews];
+
+        // Jika first responder berada di dalam sidebar, pindahkan ke text view
+        NSResponder *fr = self.window.firstResponder;
+        if ([fr isKindOfClass:[NSView class]] && [(NSView *)fr isDescendantOf:self->_leftContainer]) {
+            [self.window makeFirstResponder:self->_textView];
+        }
     }
-    [self->_splitView adjustSubviews];
+
     [self applyWordWrap];
+    [self->_splitView setNeedsDisplay:YES];
 }
 
 - (BOOL)splitView:(NSSplitView *)splitView canCollapseSubview:(NSView *)subview {
     return (subview == self->_leftContainer);
 }
 
+- (BOOL)splitView:(NSSplitView *)splitView shouldHideDividerAtIndex:(NSInteger)dividerIndex {
+    return self->_isSidebarHidden || self->_leftContainer.isHidden || [splitView isSubviewCollapsed:self->_leftContainer];
+}
+
 - (CGFloat)splitView:(NSSplitView *)splitView minPossiblePositionOfDividerAtIndex:(NSInteger)idx {
+    if (self->_isSidebarHidden || self->_leftContainer.isHidden || [splitView isSubviewCollapsed:self->_leftContainer]) {
+        return 0.0;
+    }
     return 140.0;
+}
+
+- (CGFloat)splitView:(NSSplitView *)splitView maxPossiblePositionOfDividerAtIndex:(NSInteger)idx {
+    CGFloat totalWidth = splitView.bounds.size.width;
+    return MAX(140.0, totalWidth - 180.0);
+}
+
+- (void)splitViewDidResizeSubviews:(NSNotification *)notification {
+    CGFloat currentW = self->_leftContainer.frame.size.width;
+    if (currentW >= 140.0) {
+        self->_lastSidebarWidth = currentW;
+        self->_isSidebarHidden = NO;
+    } else if (currentW <= 10.0 || self->_leftContainer.isHidden || [self->_splitView isSubviewCollapsed:self->_leftContainer]) {
+        self->_isSidebarHidden = YES;
+    }
 }
 
 #pragma mark - Main Menu / Home Action

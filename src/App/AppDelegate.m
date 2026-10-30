@@ -74,8 +74,11 @@
     [fileMenu addItem:[NSMenuItem separatorItem]];
     [fileMenu addItemWithTitle:@"Save" action:@selector(saveCurrentFile) keyEquivalent:@"s"];
     [fileMenu addItemWithTitle:@"Close Tab" action:@selector(closeActiveTab:) keyEquivalent:@"w"];
-    [fileMenu addItemWithTitle:@"Close Folder (Main Menu)" action:@selector(goToMainMenuAction:) keyEquivalent:@"K"];
-    [[fileMenu itemWithTitle:@"Close Folder (Main Menu)"] setKeyEquivalentModifierMask:NSEventModifierFlagCommand | NSEventModifierFlagShift];
+
+    NSMenuItem *closeFolderItem = [fileMenu addItemWithTitle:@"Close Folder (Main Menu)" action:@selector(goToMainMenuAction:) keyEquivalent:@"K"];
+    closeFolderItem.keyEquivalentModifierMask = NSEventModifierFlagCommand | NSEventModifierFlagShift;
+    closeFolderItem.target = self;
+
     fileItem.submenu = fileMenu;
     [mainMenu addItem:fileItem];
 
@@ -121,15 +124,16 @@
     [viewMenu addItemWithTitle:@"Actual Size" action:@selector(resetZoom) keyEquivalent:@"0"];
 
     [viewMenu addItem:[NSMenuItem separatorItem]];
-    // Toggle Hidden Files (⌘⇧.) ditempatkan dengan benar setelah viewMenu dialokasikan
 
+    // Toggle Sidebar (⌘B)
     NSMenuItem *sideItem = [viewMenu addItemWithTitle:@"Toggle Sidebar" action:@selector(toggleSidebar:) keyEquivalent:@"b"];
     sideItem.keyEquivalentModifierMask = NSEventModifierFlagCommand;
-    
+    sideItem.target = self;
+
+    // Toggle Hidden Files (⌘⇧.)
     NSMenuItem *hiddenItem = [viewMenu addItemWithTitle:@"Toggle Hidden Files" action:@selector(toggleShowHiddenFiles:) keyEquivalent:@"."];
     hiddenItem.keyEquivalentModifierMask = NSEventModifierFlagCommand | NSEventModifierFlagShift;
-
-    
+    hiddenItem.target = self;
 
     [viewMenu addItem:[NSMenuItem separatorItem]];
     [viewMenu addItemWithTitle:@"Toggle Full Screen" action:@selector(toggleFullScreen:) keyEquivalent:@"f"];
@@ -146,8 +150,6 @@
     [mainMenu addItem:helpItem];
 
     [NSApp setMainMenu:mainMenu];
-
-    
 }
 
 - (void)openLogFile:(id)sender {

@@ -28,6 +28,7 @@
   BOOL _showHiddenFiles;
 
   CGFloat _lastSidebarWidth;
+  BOOL _isSidebarHidden;
 
   // Clipboard
   NSString *_clipboardPath;
@@ -42,7 +43,6 @@
   NSScrollView *_tabScrollView;
   NSView *_tabBarView;
   NSView *_tabBarContainer;
-  NSButton *_mainMenuBtn;
 
   // Obsidian style Welcome & Empty Views
   NSView *_welcomeView;
@@ -65,6 +65,7 @@
 - (void)applyLineSpacing;
 - (void)toggleShowHiddenFiles;
 - (void)toggleSidebar;
+- (void)toggleSidebar:(id)sender;
 - (void)goToMainMenu;
 
 // File Manager Actions

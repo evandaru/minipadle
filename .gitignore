@@ -1,0 +1,37 @@
+# === MiniPadle Build Artifacts ===
+MiniPadle
+MiniPadle.app/
+MiniPadle.dmg
+*.dmg
+*.app
+*.o
+*.a
+
+# Repomix
+repomix-output.xml
+
+# macOS
+.DS_Store
+.Trashes
+.AppleDouble
+
+# Xcode (kalau suatu saat dibuka pakai Xcode)
+xcuserdata/
+DerivedData/
+*.xcodeproj/*
+*.xcworkspace/*
+*.xcuserstate
+
+# Clang / ObjC
+*.lo
+*.so
+*.dylib
+
+# Logs - dari Logger.m kamu
+*.log
+logs/
+
+# Editors
+.vscode/
+.idea/
+*.swp
